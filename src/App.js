@@ -3,48 +3,48 @@ import { BrowserRouter as Router, Route, Routes, Link, useNavigate, useParams } 
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js"; // Bootstrap JS import
 import "./App.css";
-
+ 
 const API_URL = "http://localhost:3000"; // Backend elérési útvonala
-
+ 
 const App = () => {
   const [user, setUser] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Összes");
-
+ 
   useEffect(() => {
     fetchCategories();
     fetchQuestions();
   }, []);
-
+ 
   useEffect(() => {
     fetchQuestions(selectedCategory);
   }, [selectedCategory]);
-
+ 
   const addQuestion = async (title, body, category) => {
     if (!user) {
       alert("Be kell jelentkezned, hogy kérdést tegyél fel!");
       return;
     }
-  
+ 
     try {
       const response = await fetch(`${API_URL}/questions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, body, category, username: user.username }),
       });
-  
+ 
       if (!response.ok) throw new Error("Hiba a kérdés beküldésekor");
-  
+ 
       fetchQuestions(); // Frissíti a kérdések listáját
     } catch (error) {
       console.error("Hiba a kérdés beküldésekor:", error);
     }
   };
-  
-  
-
-
+ 
+ 
+ 
+ 
   const fetchCategories = async () => {
     try {
       const response = await fetch(`${API_URL}/categories`);
@@ -55,7 +55,7 @@ const App = () => {
       console.error(error);
     }
   };
-
+ 
   const fetchQuestions = async (category = "Összes") => {
     try {
       let url = `${API_URL}/questions`;
@@ -65,54 +65,54 @@ const App = () => {
       const response = await fetch(url);
       if (!response.ok) throw new Error("Hiba a kérdések betöltésekor");
       const data = await response.json();
-      
+     
       console.log("Betöltött kérdések:", data); // 🔍 Debug log
-      
+     
       setQuestions(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
     } catch (error) {
       console.error(error);
     }
   };
-  
-
+ 
+ 
   return (
     <Router>
       <div className="container mt-3">
         <nav className="navbar navbar-expand-lg navbar-dark bg-primary mb-3">
           <div className="container-fluid">
-            <Link className="navbar-brand" to="/">Tech Fórum</Link>
+            <Link className="navbar-brand" to="/" onClick={() => setSelectedCategory('Összes')}>Tech Fórum</Link>
             <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
               <span className="navbar-toggler-icon"></span>
             </button>
             <div className="collapse navbar-collapse" id="navbarNav">
               <ul className="navbar-nav">
                 <li className="nav-item">
-                  <Link className="nav-link" to="/">Főoldal</Link>
+                  <Link className="nav-link" to="/" onClick={() => setSelectedCategory('Összes')}>Főoldal</Link>
                 </li>
                 <li className="nav-item dropdown">
                   <button className="nav-link dropdown-toggle" id="navbarDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Kategóriák
                   </button>
                   <ul className="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <li><button className="dropdown-item" onClick={() => setSelectedCategory("Összes")}>Összes</button></li>
+                    <li><Link to={'/'} className="nav-link"><button className="dropdown-item" onClick={() => setSelectedCategory("Összes")}>Összes</button></Link></li>
                     {categories.map((category) => (
-                      <li key={category.id}><button className="dropdown-item" onClick={() => setSelectedCategory(category.name)}>{category.name}</button></li>
+                      <li><Link to={`/category/${encodeURIComponent(category.name)}`} key={category.id} className="nav-link"><button className="dropdown-item" onClick={() => setSelectedCategory(category.name)}>{category.name}</button></Link></li>
                     ))}
                   </ul>
                 </li>
                 <li className="nav-item">
                   <Link className="nav-link" to="/new-question">Új kérdés</Link>
                 </li>
-                {user?.isAdmin && (
+                {user?.isAdmin ? (
                   <li className="nav-item">
                     <Link className="nav-link" to="/admin">Admin</Link>
                   </li>
-                )}
+                ) : null}
                 <li className="nav-item">
                   {!user ? (
                     <Link className="nav-link" to="/auth">Bejelentkezés / Regisztráció</Link>
                   ) : (
-                    <button className="btn btn-outline-light" onClick={() => setUser(null)}>Kijelentkezés</button>
+                    <button className="btn btn-outline-light nav-link" onClick={() => setUser(null)}>Kijelentkezés</button>
                   )}
                 </li>
               </ul>
@@ -130,7 +130,7 @@ const App = () => {
     </Router>
   );
 };
-
+ 
 const Home = ({ questions, user }) => (
   <div>
     <h3>Legfrissebb kérdések</h3>
@@ -146,7 +146,7 @@ const Home = ({ questions, user }) => (
             </Link>{" "}
             - {new Date(q.created_at).toLocaleString()}
           </small>
-          
+         
           {/* Komment szekció */}
           <CommentSection questionId={q.id} user={user} />
         </div>
@@ -156,11 +156,11 @@ const Home = ({ questions, user }) => (
     )}
   </div>
 );
-
+ 
 const CategoryPage = ({ questions, user }) => {
   const { category } = useParams();
   const [filteredQuestions, setFilteredQuestions] = useState([]);
-
+ 
   useEffect(() => {
     const fetchCategoryQuestions = async () => {
       try {
@@ -172,10 +172,10 @@ const CategoryPage = ({ questions, user }) => {
         console.error(error);
       }
     };
-
+ 
     fetchCategoryQuestions();
   }, [category]);
-
+ 
   return (
     <div>
       <h3>{category} kérdések</h3>
@@ -191,7 +191,7 @@ const CategoryPage = ({ questions, user }) => {
               </Link>{" "}
               - {new Date(q.created_at).toLocaleString()}
             </small>
-
+ 
             {/* Komment szekció */}
             <CommentSection questionId={q.id} user={user} />
           </div>
@@ -202,14 +202,14 @@ const CategoryPage = ({ questions, user }) => {
     </div>
   );
 };
-
-
-
+ 
+ 
+ 
 const NewQuestion = ({ addQuestion, categories, questions }) => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [category, setCategory] = useState("");
-
+ 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title || !body || !category) {
@@ -225,9 +225,9 @@ const NewQuestion = ({ addQuestion, categories, questions }) => {
     setBody("");
     setCategory("");
   };
-  
-  
-
+ 
+ 
+ 
   return (
     <div>
       <h3>Új kérdés beküldése</h3>
@@ -253,18 +253,18 @@ const NewQuestion = ({ addQuestion, categories, questions }) => {
     </div>
   );
 };
-
+ 
 const Auth = ({ setUser }) => {
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
-
+ 
   const handleAuth = async () => {
     const endpoint = isRegister ? "/register" : "/login";
     const payload = isRegister ? { username, password, email } : { username, password };
-
+ 
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
@@ -272,7 +272,7 @@ const Auth = ({ setUser }) => {
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      
+     
       if (response.ok) {
         if (!isRegister) {
           setUser(data.user);
@@ -288,37 +288,37 @@ const Auth = ({ setUser }) => {
       console.error("Hiba:", error);
     }
   };
-
+ 
   const handleKeyDown = (event) => {
     if (event.key === "Enter") {
       handleAuth();
     }
   };
-
+ 
   return (
     <div className="auth-container">
       <h3>{isRegister ? "Regisztráció" : "Bejelentkezés"}</h3>
-      <input 
-        type="text" 
-        placeholder="Felhasználónév" 
-        value={username} 
-        onChange={(e) => setUsername(e.target.value)} 
-        onKeyDown={handleKeyDown} 
+      <input
+        type="text"
+        placeholder="Felhasználónév"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        onKeyDown={handleKeyDown}
       />
-      <input 
-        type="password" 
-        placeholder="Jelszó" 
-        value={password} 
-        onChange={(e) => setPassword(e.target.value)} 
-        onKeyDown={handleKeyDown} 
+      <input
+        type="password"
+        placeholder="Jelszó"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        onKeyDown={handleKeyDown}
       />
       {isRegister && (
-        <input 
-          type="email" 
-          placeholder="Email" 
-          value={email} 
-          onChange={(e) => setEmail(e.target.value)} 
-          onKeyDown={handleKeyDown} 
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
       )}
       <button onClick={handleAuth}>{isRegister ? "Regisztráció" : "Bejelentkezés"}</button>
@@ -328,9 +328,9 @@ const Auth = ({ setUser }) => {
     </div>
   );
 };
-
-
-
+ 
+ 
+ 
 const organizeComments = (comments) => {
   const commentMap = {};
   comments.forEach(c => {
@@ -344,13 +344,13 @@ const organizeComments = (comments) => {
   });
   return comments.filter(c => !c.parent_id);
 };
-
+ 
 const CommentSection = ({ questionId, user }) => {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [showComments, setShowComments] = useState(false);
-
+ 
   const fetchComments = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/questions/${questionId}/comments`);
@@ -361,13 +361,13 @@ const CommentSection = ({ questionId, user }) => {
       console.error(error);
     }
   }, [questionId]);
-
+ 
   useEffect(() => {
     if (showComments) {
       fetchComments();
     }
   }, [fetchComments, showComments]);
-
+ 
   const addComment = async () => {
     if (!user) {
       alert("Be kell jelentkezned, hogy hozzászólhass!");
@@ -377,7 +377,7 @@ const CommentSection = ({ questionId, user }) => {
       alert("A komment nem lehet üres!");
       return;
     }
-
+ 
     try {
       const response = await fetch(`${API_URL}/questions/${questionId}/comments`, {
         method: "POST",
@@ -385,7 +385,7 @@ const CommentSection = ({ questionId, user }) => {
         body: JSON.stringify({ text: commentText, username: user.username, parentId: replyTo })
       });
       if (!response.ok) throw new Error("Hiba a komment beküldésekor");
-
+ 
       setCommentText("");
       setReplyTo(null);
       fetchComments();
@@ -393,13 +393,13 @@ const CommentSection = ({ questionId, user }) => {
       console.error(error);
     }
   };
-
+ 
   return (
     <div className="comment-section">
       <button className="btn btn-secondary btn-sm" onClick={() => setShowComments(!showComments)}>
         {showComments ? "Hozzászólások elrejtése" : "Hozzászólások megjelenítése"}
       </button>
-
+ 
       {showComments && (
         <div className="mt-2">
           <h6>Hozzászólások</h6>
@@ -410,8 +410,8 @@ const CommentSection = ({ questionId, user }) => {
                 <div className="comment-actions">
                   <button onClick={() => setReplyTo(c.id)}>Válasz</button>
                 </div>
-
-                {c.replies.length > 0 && (
+ 
+                {c.replies.length && (
                   <div className="mt-2">
                     {c.replies.map((reply, idx) => (
                       <div key={idx} className="comment-reply">
@@ -425,7 +425,7 @@ const CommentSection = ({ questionId, user }) => {
           ) : (
             <p>Még nincsenek hozzászólások.</p>
           )}
-
+ 
           {user ? (
             <>
               {replyTo && (
@@ -450,14 +450,14 @@ const CommentSection = ({ questionId, user }) => {
     </div>
   );
 };
-
+ 
 const AdminPanel = ({ user }) => {
   const [users, setUsers] = useState([]);
-
+ 
   useEffect(() => {
     fetchUsers();
   }, []);
-
+ 
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_URL}/users`);
@@ -468,7 +468,7 @@ const AdminPanel = ({ user }) => {
       console.error(error);
     }
   };
-
+ 
   const deleteUser = async (id) => {
     if (user.id === id) {
       alert("Nem törölheted saját magad!");
@@ -482,7 +482,7 @@ const AdminPanel = ({ user }) => {
       console.error("Hiba a törléskor:", error);
     }
   };
-  
+ 
   const grantAdmin = async (id) => {
     try {
       const response = await fetch(`${API_URL}/users/${id}/make-admin`, { method: "POST" });
@@ -493,6 +493,10 @@ const AdminPanel = ({ user }) => {
     }
   };
   const revokeAdmin = async (id) => {
+    if (user.id === id) {
+      alert("Nem veheted el saját magadtól az admin jogot!");
+      return;
+    }
     try {
       await fetch(`${API_URL}/users/${id}/remove-admin`, { method: "POST" });
       fetchUsers();
@@ -500,14 +504,14 @@ const AdminPanel = ({ user }) => {
       console.error(error);
     }
   };
-  
+ 
   return (
     <div>
       <h3>Felhasználók kezelése</h3>
       <ul className="list-group">
         {users.map(u => (
           <li key={u.id} className="list-group-item d-flex justify-content-between align-items-center">
-            {u.username} {u.isAdmin && "(Admin)"}
+            {u.username} {u.isAdmin ? "(Admin)" : null}
             <div>
               {!u.isAdmin ? (
                 <button className="btn btn-sm btn-warning me-2" onClick={() => grantAdmin(u.id)}>Admin jog</button>
@@ -521,7 +525,7 @@ const AdminPanel = ({ user }) => {
       </ul>
     </div>
   );
-  
+ 
 };
-
+ 
 export default App;
